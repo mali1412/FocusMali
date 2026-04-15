@@ -40,7 +40,7 @@ import mx.unam.fc.icat.focusmali.view.SessionHistoryActivity;
 /**
  * Actividad principal que gestiona el ciclo de vida del temporizador Pomodoro.
  * Coordina la interfaz de usuario, los estados de la sesión y la persistencia de datos.
- * @author <a href="mailto:mali@ciencias.unam.mx" > Malinalli Escobedo Irineo</a> - @mali1412
+ *  @author <a href="mailto:mali@ciencias.unam.mx" > Malinalli Escobedo Irineo</a> - @mali1412
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -100,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         sessionManager = new SessionManager();
 
+
         bindViews();
         restoreState(savedInstanceState);
         setSupportActionBar(toolbar);
@@ -108,7 +109,6 @@ public class MainActivity extends AppCompatActivity {
 
         updateTimerDisplay(timeLeftMillis);
         updateSessionsCompletedUI();
-        syncButtonText();
     }
 
     /**
@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
         btnReset.setOnClickListener(v -> resetTimer());
 
         btnSkip.setOnClickListener(v -> {
-            if (timerState != TimerState.IDLE || timeLeftMillis < getDurationForMode(currentMode)) onSessionFinished(true);
+            if (timerState != TimerState.IDLE) skipToNextSession();
             else Toast.makeText(this, "Inicia el timer primero", Toast.LENGTH_SHORT).show();
         });
     }
@@ -189,7 +189,6 @@ public class MainActivity extends AppCompatActivity {
      * Gestiona la finalización de una sesión, guarda en DB y actualiza estados.
      */
     private void onSessionFinished(boolean completed) {
-        cancelTimer();
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         timerState = TimerState.IDLE;
 
@@ -199,11 +198,11 @@ public class MainActivity extends AppCompatActivity {
         if (completed) {
             vibrate();
             showMotivationalQuote();
+            addDot();
 
             // Lógica de transición Pomodoro
             if (currentMode == SessionMode.FOCUS) {
                 focusSessionsCompleted++;
-                addDot();
                 if (focusSessionsCompleted >= SESSIONS_BEFORE_REST) {
                     currentMode = SessionMode.REST;
                 } else {
@@ -227,9 +226,9 @@ public class MainActivity extends AppCompatActivity {
         String date = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault()).format(new Date());
         String startTime = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
 
-        Session session = new Session(type, date, startTime, duration, completed);
+       Session session = new Session(type, date, startTime, duration, completed);
 
-        sessionManager.addSession(session);
+       sessionManager.addSession(session);
 
         Toast.makeText(this, "Sesión guardada", Toast.LENGTH_SHORT).show();
     }
@@ -241,8 +240,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void resetTimer() {
         cancelTimer();
-        timerState = TimerState.IDLE;
         resetModeTime();
+        timerState = TimerState.IDLE;
         btnStartStop.setText(R.string.btn_start);
     }
 
@@ -296,19 +295,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void highlightChip(Chip activeChip) {
-        if (activeChip == null) return;
         float density = getResources().getDisplayMetrics().density;
         Chip[] allChips = {chipFocus, chipBreak, chipRest};
         for (Chip chip : allChips) chip.setChipStrokeWidth(0);
 
         activeChip.setChipStrokeWidth(2 * density);
         activeChip.setChipStrokeColor(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.color_border_accent)));
-    }
-
-    private void syncButtonText() {
-        if (timerState == TimerState.RUNNING) btnStartStop.setText(R.string.btn_pause);
-        else if (timerState == TimerState.PAUSED) btnStartStop.setText(R.string.btn_resume);
-        else btnStartStop.setText(R.string.btn_start);
     }
 
     private void vibrate() {

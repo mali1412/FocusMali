@@ -5,8 +5,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 /**
- * Clase encargada de la creación y gestión de la base de datos SQLite nativa.
- * Define el esquema de la tabla 'sessions' para el historial de FocusBuddy.
+ * Clase encargada de la creación y gestión de la base de datos SQLite nativa
+ * Define el esquema de la tabla sessions para el historial
  */
 public class SessionDbHelper extends SQLiteOpenHelper {
 
@@ -16,7 +16,7 @@ public class SessionDbHelper extends SQLiteOpenHelper {
 
     // Nombre de la tabla y columnas
     public static final String TABLE_NAME = "sessions";
-    public static final String COLUMN_ID = "_id"; // Es buena práctica usar _id para SQLite
+    public static final String COLUMN_ID = "_id";
     public static final String COLUMN_TYPE = "type";
     public static final String COLUMN_DATE = "date";
     public static final String COLUMN_START_TIME = "start_time";
@@ -45,7 +45,6 @@ public class SessionDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // En esta práctica, si actualizamos versión, borramos y recreamos
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
         onCreate(db);
     }
