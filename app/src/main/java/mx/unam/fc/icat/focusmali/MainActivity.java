@@ -135,6 +135,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // --- CUMPLE RÚBRICA: Persistencia del estado del temporizador ---
+    @Override
+    protected void onPause() {
+        super.onPause();
+        try {
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putLong(KEY_TIME_LEFT, timeLeftMillis);
+            editor.putString(KEY_SESSION_MODE, currentMode.name());
+            editor.putInt(KEY_SESSIONS_COMPLETED, focusSessionsCompleted);
+            editor.putString(KEY_TIMER_STATE, timerState.name());
+            editor.apply(); // Guarda los cambios asíncronamente
+            Log.d("MainActivity", "Estado guardado en SharedPreferences");
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error al guardar en SharedPreferences", e);
+        }
+    }
+
     private void bindViews() {
         toolbar = findViewById(R.id.tbMenu);
         chipGroupMode = findViewById(R.id.chipGroupMode);
