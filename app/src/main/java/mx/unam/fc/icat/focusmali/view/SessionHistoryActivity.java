@@ -129,7 +129,7 @@ public class SessionHistoryActivity extends AppCompatActivity {
 
             // Inicializamos el adaptador pasando 'this' como contexto para acceder a recursos.
             // Nota: Se cambió getResources() por 'this' para que el adaptador tenga acceso al Context.
-            adapter = new SessionHistoryAdapter(history, getResources());
+            adapter = new SessionHistoryAdapter(history, this);
             recyclerView.setAdapter(adapter);
         } catch (Exception e) {
             Log.e("SessionHistory", "Error al inicializar RecyclerView", e);

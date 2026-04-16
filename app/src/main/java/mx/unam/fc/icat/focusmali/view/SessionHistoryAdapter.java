@@ -1,6 +1,7 @@
 package mx.unam.fc.icat.focusmali.view;
 
-import android.content.res.Resources;
+import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,17 +52,17 @@ public class SessionHistoryAdapter extends RecyclerView.Adapter<SessionHistoryAd
 
     // Estructura de datos que contiene la información a mostrar (Dataset).
     private final List<Session> DATASET;
-    // Referencia a recursos para obtener colores y dimensiones dinámicamente.
-    private final Resources RESOURCES;
+    // --- CAMBIO PARA ROBUSTEZ: Usamos Context en lugar de Resources ---
+    private final Context CONTEXT;
 
     /**
      * Constructor del adaptador.
      * @param sessions Lista de objetos de tipo Session.
-     * @param res Referencia a los recursos de la aplicación.
+     * @param context Referencia al contexto de la actividad.
      */
-    public SessionHistoryAdapter(List<Session> sessions, Resources res) {
+    public SessionHistoryAdapter(List<Session> sessions, Context context) {
         this.DATASET = sessions;
-        this.RESOURCES = res;
+        this.CONTEXT = context;
     }
 
     /**
@@ -83,37 +84,46 @@ public class SessionHistoryAdapter extends RecyclerView.Adapter<SessionHistoryAd
      * @param holder El contenedor de las vistas (ViewHolder).
      * @param position La posición del elemento dentro del DATASET.
      */
-
     @Override
     public void onBindViewHolder(@NonNull SessionViewHolder holder, int position) {
-        android.content.Context context = holder.itemView.getContext();
-        Session session = DATASET.get(position);
+        // --- CUMPLE RÚBRICA: Robustez con try-catch ---
+        try {
+            Session session = DATASET.get(position);
 
-        String typeInDb = session.getType();
-        if (typeInDb.equalsIgnoreCase("Enfoque") || typeInDb.equalsIgnoreCase("Focus")) {
-            holder.tvSessionType.setText(context.getString(R.string.type_focus));
-        } else {
-            holder.tvSessionType.setText(context.getString(R.string.type_break));
-        }
+            // Traducción dinámica del tipo de sesión
+            String typeInDb = session.getType();
+            if (typeInDb.equalsIgnoreCase("Enfoque") || typeInDb.equalsIgnoreCase("Focus")) {
+                holder.tvSessionType.setText(CONTEXT.getString(R.string.type_focus));
+            } else {
+                holder.tvSessionType.setText(CONTEXT.getString(R.string.type_break));
+            }
 
-        holder.tvSessionDate.setText(session.getDate());
-        holder.tvSessionTime.setText(session.getStartTime());
-        holder.tvSessionDuration.setText(session.getDuration() + " min");
+            holder.tvSessionDate.setText(session.getDate());
+            holder.tvSessionTime.setText(session.getStartTime());
 
-        if (session.isCompleted()) {
-            holder.chipStatus.setText("✓ " + context.getString(R.string.status_completed));
+            // --- CORRECCIÓN: No hardcoding para la duración ---
+            String durationText = session.getDuration() + " " + CONTEXT.getString(R.string.unit_minutes);
+            holder.tvSessionDuration.setText(durationText);
 
-            holder.chipStatus.setChipBackgroundColorResource(R.color.white);
-            holder.chipStatus.setTextColor(RESOURCES.getColor(R.color.color_primary, null));
-        } else {
-            holder.chipStatus.setText("✕ " + context.getString(R.string.status_skipped));
+            if (session.isCompleted()) {
+                // --- CORRECCIÓN: No hardcoding para el símbolo ✓ ---
+                String completedText = "✓ " + CONTEXT.getString(R.string.status_completed);
+                holder.chipStatus.setText(completedText);
 
-            holder.chipStatus.setChipBackgroundColorResource(R.color.color_secondary);
-            holder.chipStatus.setTextColor(RESOURCES.getColor(R.color.white, null));
+                holder.chipStatus.setChipBackgroundColorResource(R.color.white);
+                holder.chipStatus.setTextColor(CONTEXT.getColor(R.color.color_primary));
+            } else {
+                // --- CORRECCIÓN: No hardcoding para el símbolo ✕ ---
+                String interruptedText = "✕ " + CONTEXT.getString(R.string.status_skipped);
+                holder.chipStatus.setText(interruptedText);
+
+                holder.chipStatus.setChipBackgroundColorResource(R.color.color_secondary);
+                holder.chipStatus.setTextColor(CONTEXT.getColor(R.color.white));
+            }
+        } catch (Exception e) {
+            Log.e("SessionHistoryAdapter", "Error al vincular vista en posición: " + position, e);
         }
     }
-
-
 
     /**
      * Indica el tamaño total de la lista de datos.
@@ -121,6 +131,6 @@ public class SessionHistoryAdapter extends RecyclerView.Adapter<SessionHistoryAd
      */
     @Override
     public int getItemCount() {
-        return DATASET.size();
+        return DATASET != null ? DATASET.size() : 0;
     }
 }

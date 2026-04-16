@@ -47,7 +47,7 @@
     <string name="status_completed">Completado</string>
     <string name="status_skipped">Saltado</string>
 
-
+    <string name="unit_minutes">min</string>
     <string name="pref_summary_theme">Elige entre modo claro u oscuro</string>
     <string name="pref_summary_lang">Selecciona el lenguaje de la interfaz</string>
 

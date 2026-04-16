@@ -56,4 +56,6 @@
 
     <string name="pref_summary_theme">Choose between light or dark mode</string>
     <string name="pref_summary_lang">Select your preferred language</string>
+
+    <string name="unit_minutes">min</string>
 </resources>
