@@ -1,5 +1,6 @@
 package mx.unam.fc.icat.focusmali.view;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -7,10 +8,12 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
+import java.util.Locale;
 
 import mx.unam.fc.icat.focusmali.R;
 import mx.unam.fc.icat.focusmali.model.Session;
@@ -37,6 +40,11 @@ public class SessionHistoryActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // --- CAMBIO COMMIT 4: Aplicar idioma antes de inflar la vista ---
+        SharedPreferences settingsPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String lang = settingsPrefs.getString(getString(R.string.lang_preference_key), "es");
+        applyLanguage(lang);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history_session);
 
@@ -45,6 +53,17 @@ public class SessionHistoryActivity extends AppCompatActivity {
         setupRecyclerView();
         setupFilterLogic();
         updateHistoryDisplay();
+    }
+
+    /**
+     * Método auxiliar para forzar el idioma en esta actividad.
+     */
+    private void applyLanguage(String langCode) {
+        Locale locale = new Locale(langCode);
+        Locale.setDefault(locale);
+        android.content.res.Configuration config = new android.content.res.Configuration();
+        config.setLocale(locale);
+        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
     }
 
     /**
@@ -59,14 +78,6 @@ public class SessionHistoryActivity extends AppCompatActivity {
         // TODO: Vincular Chips mediante findViewById y asignar IDs correspondientes.
 
         sessionManager = SessionManager.getInstance(this);
-
-        // Puedes descomentar estas líneas para probar el diseño:
-        /*
-        sessionManager.addSession(new Session("Enfoque", "18 mar 2026", "15:00", 25, true));
-        sessionManager.addSession(new Session("Descanso", "18 mar 2026", "15:25", 5, true));
-        sessionManager.addSession(new Session("Enfoque", "18 mar 2026", "17:25", 3, false));
-        sessionManager.addSession(new Session("Descanso", "18 mar 2026", "18:30", 15, true));
-        */
     }
 
     /**
@@ -85,6 +96,7 @@ public class SessionHistoryActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            // El título ahora es dinámico
             getSupportActionBar().setTitle(R.string.title_history);
         }
     }
@@ -100,7 +112,7 @@ public class SessionHistoryActivity extends AppCompatActivity {
         // Obtenemos los datos iniciales.
         List<Session> history = sessionManager.getHistory();
 
-        // Inicializamos el adaptador.
+        // Inicializamos el adaptador pasando 'this' como contexto para acceder a recursos.
         adapter = new SessionHistoryAdapter(history, getResources());
         recyclerView.setAdapter(adapter);
     }
@@ -109,15 +121,13 @@ public class SessionHistoryActivity extends AppCompatActivity {
      * Gestiona la visibilidad de la UI y actualiza el contador.
      */
     private void updateHistoryDisplay() {
-        // TODO: Recuperar datos reales para el listado de sesiones.
-
         List<Session> sessions = sessionManager.getHistory();
         boolean isEmpty = (sessions == null || sessions.isEmpty());
 
         layoutEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
         recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
 
-        // TODO: Investigar cómo usar Plurals en strings.xml para manejar "1 sesión" vs "2 sesiones".
+        // Uso de string con formato para soporte multi-idioma.
         String countText = getString(R.string.session_count, (sessions != null ? sessions.size() : 0));
         tvResultCount.setText(countText);
     }

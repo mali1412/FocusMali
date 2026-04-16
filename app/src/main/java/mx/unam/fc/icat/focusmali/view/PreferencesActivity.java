@@ -1,11 +1,14 @@
 package mx.unam.fc.icat.focusmali.view;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
 import androidx.preference.PreferenceManager; // Asegúrate de tener la dependencia
+
+import java.util.Locale;
 
 import mx.unam.fc.icat.focusmali.R;
 
@@ -66,7 +69,10 @@ public class PreferencesActivity extends AppCompatActivity
         if (key.equals(getString(R.string.lang_preference_key))) {
             String lang = sharedPreferences.getString(key, "es");
             applyLanguage(lang);
-            recreate();
+
+            Intent intent = getIntent();
+            finish();
+            startActivity(intent);
         }
 
         // Caso Tema (Oscuro / Claro / Sistema)
@@ -81,7 +87,19 @@ public class PreferencesActivity extends AppCompatActivity
      */
     private void applyLanguage(String langCode) {
         // Configurar la baseContext con el nuevo Locale.
+        Locale locale = new Locale(langCode);
+        Locale.setDefault(locale);
+        android.content.res.Configuration config = new android.content.res.Configuration();
+        config.setLocale(locale);
+
+        // Aplicamos la configuración al contexto de la app
+        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+
+        // Guardamos explícitamente para que MainActivity lo sepa al iniciar
+        sharedPreferences.edit().putString(getString(R.string.lang_preference_key), langCode).apply();
     }
+
+
 
     /**
      * Aplica el modo oscuro o claro según la preferencia del usuario.
@@ -107,4 +125,6 @@ public class PreferencesActivity extends AppCompatActivity
         finish();
         return true;
     }
+
+
 }

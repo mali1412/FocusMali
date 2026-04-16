@@ -108,6 +108,7 @@ public class SessionHistoryAdapter extends RecyclerView.Adapter<SessionHistoryAd
         }
     }
 
+
     /**
      * Indica el tamaño total de la lista de datos.
      * @return Cantidad de elementos en el DATASET.

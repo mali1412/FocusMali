@@ -23,6 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -37,26 +38,16 @@ import mx.unam.fc.icat.focusmali.model.SessionManager;
 import mx.unam.fc.icat.focusmali.view.PreferencesActivity;
 import mx.unam.fc.icat.focusmali.view.SessionHistoryActivity;
 
-/**
- * Actividad principal que gestiona el ciclo de vida del temporizador Pomodoro.
- * Coordina la interfaz de usuario, los estados de la sesión y la persistencia de datos.
- *  @author <a href="mailto:mali@ciencias.unam.mx" > Malinalli Escobedo Irineo</a> - @mali1412
- */
 public class MainActivity extends AppCompatActivity {
 
-    /** Estados posibles del temporizador. */
     enum TimerState { IDLE, RUNNING, PAUSED }
-
-    /** Modos de sesión según la técnica Pomodoro. */
     enum SessionMode { FOCUS, BREAK, REST }
 
-    // Constantes de configuración (Duraciones en milisegundos)
     private static final long FOCUS_DURATION_MS = 25 * 60 * 1000L;
     private static final long BREAK_DURATION_MS = 5 * 60 * 1000L;
     private static final long REST_DURATION_MS = 15 * 60 * 1000L;
     private static final int SESSIONS_BEFORE_REST = 4;
 
-    // Elementos de la Interfaz de Usuario
     private Toolbar toolbar;
     private ChipGroup chipGroupMode;
     private Chip chipFocus, chipBreak, chipRest;
@@ -65,14 +56,12 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton btnReset, btnSkip;
     private LinearLayout sessionDotsContainer;
 
-    // Lógica del Temporizador y Sesiones
     private CountDownTimer countDownTimer;
     private TimerState timerState = TimerState.IDLE;
     private SessionMode currentMode = SessionMode.FOCUS;
     private long timeLeftMillis = FOCUS_DURATION_MS;
     private int focusSessionsCompleted = 0;
 
-    // Persistencia y Gestión de Datos
     private SessionManager sessionManager;
     private SharedPreferences sharedPreferences;
     private static final String PREFS_NAME = "focusmaliPrefs";
@@ -81,25 +70,17 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_SESSIONS_COMPLETED = "sessionsCompleted";
     private static final String KEY_TIMER_STATE = "timerState";
 
-    private static final String[] MOTIVATIONAL_QUOTES = {
-            "¡Excelente trabajo! Tómate un descanso.",
-            "¡Bien hecho! Relájate un poco.",
-            "¡Gran sesión! Ahora a recuperarse.",
-            "¡Lo estás haciendo genial! Descansa.",
-            "¡Sesión completada! Merecías un respiro.",
-            "¡Productividad en acción! Ahora a relajarse."
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // --- COMMIT 4: Aplicar idioma antes de inflar la interfaz ---
+        loadLocale();
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        // Inicialización de componentes y gestores
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         sessionManager = SessionManager.getInstance(this);
-
 
         bindViews();
         restoreState(savedInstanceState);
@@ -111,9 +92,39 @@ public class MainActivity extends AppCompatActivity {
         updateSessionsCompletedUI();
     }
 
-    /**
-     * Vincula las variables de Java con los componentes del XML.
-     */
+    // --- NUEVO MÉTODO PARA CARGAR IDIOMA ---
+    private void loadLocale() {
+        SharedPreferences settingsPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String lang = settingsPrefs.getString(getString(R.string.lang_preference_key), "es");
+        applyLanguage(lang);
+    }
+
+    private void applyLanguage(String langCode) {
+        Locale locale = new Locale(langCode);
+        Locale.setDefault(locale);
+        android.content.res.Configuration config = new android.content.res.Configuration();
+        config.setLocale(locale);
+        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+    }
+
+    // --- REFRESCAR AL VOLVER DE PREFERENCIAS ---
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadLocale(); // Volver a aplicar el idioma por si cambió
+        updateTimerDisplay(timeLeftMillis); // Traduce etiquetas
+        updateSessionsCompletedUI(); // Traduce contador
+
+        // Actualizar el texto del botón según el estado
+        if (timerState == TimerState.RUNNING) {
+            btnStartStop.setText(getString(R.string.btn_pause));
+        } else if (timerState == TimerState.PAUSED) {
+            btnStartStop.setText(getString(R.string.btn_resume));
+        } else {
+            btnStartStop.setText(getString(R.string.btn_start));
+        }
+    }
+
     private void bindViews() {
         toolbar = findViewById(R.id.tbMenu);
         chipGroupMode = findViewById(R.id.chipGroupMode);
@@ -130,9 +141,6 @@ public class MainActivity extends AppCompatActivity {
         sessionDotsContainer = findViewById(R.id.sessionDotsContainer);
     }
 
-    /**
-     * Configura los escuchas de clics para los botones de control.
-     */
     private void setupClickListeners() {
         btnStartStop.setOnClickListener(v -> {
             if (timerState == TimerState.RUNNING) pauseTimer();
@@ -143,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnSkip.setOnClickListener(v -> {
             if (timerState != TimerState.IDLE) skipToNextSession();
-            else Toast.makeText(this, "Inicia el timer primero", Toast.LENGTH_SHORT).show();
+            else Toast.makeText(this, getString(R.string.btn_start), Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -153,13 +161,10 @@ public class MainActivity extends AppCompatActivity {
         chipRest.setOnClickListener(v -> changeMode(SessionMode.REST));
     }
 
-    /**
-     * Inicia el conteo regresivo y bloquea la pantalla para que no se apague.
-     */
     private void startTimer() {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         timerState = TimerState.RUNNING;
-        btnStartStop.setText(R.string.btn_pause);
+        btnStartStop.setText(getString(R.string.btn_pause));
 
         countDownTimer = new CountDownTimer(timeLeftMillis, 1000) {
             @Override
@@ -175,32 +180,21 @@ public class MainActivity extends AppCompatActivity {
         }.start();
     }
 
-    /**
-     * Pausa el temporizador y libera el bloqueo de pantalla.
-     */
     private void pauseTimer() {
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         cancelTimer();
         timerState = TimerState.PAUSED;
-        btnStartStop.setText(R.string.btn_resume);
+        btnStartStop.setText(getString(R.string.btn_resume));
     }
 
-    /**
-     * Gestiona la finalización de una sesión, guarda en DB y actualiza estados.
-     */
     private void onSessionFinished(boolean completed) {
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         timerState = TimerState.IDLE;
-
-        // Guardar sesión en base de datos
         saveSessionToDatabase(completed);
 
         if (completed) {
             vibrate();
-            showMotivationalQuote();
             addDot();
-
-            // Lógica de transición Pomodoro
             if (currentMode == SessionMode.FOCUS) {
                 focusSessionsCompleted++;
                 if (focusSessionsCompleted >= SESSIONS_BEFORE_REST) {
@@ -216,21 +210,17 @@ public class MainActivity extends AppCompatActivity {
 
         resetModeTime();
         updateSessionsCompletedUI();
-        btnStartStop.setText(R.string.btn_start);
-        Toast.makeText(this, "Sesión finalizada", Toast.LENGTH_SHORT).show();
+        btnStartStop.setText(getString(R.string.btn_start));
     }
 
     private void saveSessionToDatabase(boolean completed) {
-        String type = (currentMode == SessionMode.FOCUS) ? "Enfoque" : "Descanso";
+        String type = (currentMode == SessionMode.FOCUS) ? getString(R.string.mode_focus) : getString(R.string.mode_break);
         int duration = (int) (getDurationForMode(currentMode) / 60000);
         String date = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault()).format(new Date());
         String startTime = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
 
-       Session session = new Session(type, date, startTime, duration, completed);
-
-       sessionManager.addSession(session);
-
-        Toast.makeText(this, "Sesión guardada", Toast.LENGTH_SHORT).show();
+        Session session = new Session(type, date, startTime, duration, completed);
+        sessionManager.addSession(session);
     }
 
     private void skipToNextSession() {
@@ -242,14 +232,11 @@ public class MainActivity extends AppCompatActivity {
         cancelTimer();
         resetModeTime();
         timerState = TimerState.IDLE;
-        btnStartStop.setText(R.string.btn_start);
+        btnStartStop.setText(getString(R.string.btn_start));
     }
 
     private void changeMode(SessionMode newMode) {
-        if (timerState == TimerState.RUNNING) {
-            Toast.makeText(this, "Detén el timer para cambiar de modo", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (timerState == TimerState.RUNNING) return;
         currentMode = newMode;
         resetTimer();
     }
@@ -273,13 +260,17 @@ public class MainActivity extends AppCompatActivity {
         int seconds = (int) (millis / 1000) % 60;
         tvTimerDisplay.setText(String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds));
 
-        // Actualizar etiqueta de modo
-        String label = (currentMode == SessionMode.FOCUS) ? "Sesión de enfoque" : "Tiempo de descanso";
-        tvSessionLabel.setText(label);
+        if (currentMode == SessionMode.FOCUS) {
+            tvSessionLabel.setText(getString(R.string.mode_focus));
+        } else if (currentMode == SessionMode.BREAK) {
+            tvSessionLabel.setText(getString(R.string.mode_break));
+        } else {
+            tvSessionLabel.setText(getString(R.string.mode_long_break));
+        }
     }
 
     private void updateSessionsCompletedUI() {
-        tvSessionsCount.setText(String.format(Locale.getDefault(), "Sesiones: %d / %d", focusSessionsCompleted, SESSIONS_BEFORE_REST));
+        tvSessionsCount.setText(getString(R.string.sessionsCount, focusSessionsCompleted));
     }
 
     private void selectChipForMode(SessionMode mode) {
@@ -298,7 +289,6 @@ public class MainActivity extends AppCompatActivity {
         float density = getResources().getDisplayMetrics().density;
         Chip[] allChips = {chipFocus, chipBreak, chipRest};
         for (Chip chip : allChips) chip.setChipStrokeWidth(0);
-
         activeChip.setChipStrokeWidth(2 * density);
         activeChip.setChipStrokeColor(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.color_border_accent)));
     }
@@ -318,11 +308,6 @@ public class MainActivity extends AppCompatActivity {
         sessionDotsContainer.addView(dot);
     }
 
-    private void showMotivationalQuote() {
-        int randomIndex = (int) (Math.random() * MOTIVATIONAL_QUOTES.length);
-        tvQuote.setText(MOTIVATIONAL_QUOTES[randomIndex]);
-    }
-
     private void cancelTimer() {
         if (countDownTimer != null) {
             countDownTimer.cancel();
@@ -330,7 +315,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Persistencia de Estado
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -338,13 +322,6 @@ public class MainActivity extends AppCompatActivity {
         outState.putString(KEY_SESSION_MODE, currentMode.name());
         outState.putInt(KEY_SESSIONS_COMPLETED, focusSessionsCompleted);
         outState.putString(KEY_TIMER_STATE, timerState.name());
-
-        sharedPreferences.edit()
-                .putLong(KEY_TIME_LEFT, timeLeftMillis)
-                .putString(KEY_SESSION_MODE, currentMode.name())
-                .putInt(KEY_SESSIONS_COMPLETED, focusSessionsCompleted)
-                .putString(KEY_TIMER_STATE, timerState.name())
-                .apply();
     }
 
     private void restoreState(Bundle savedInstanceState) {

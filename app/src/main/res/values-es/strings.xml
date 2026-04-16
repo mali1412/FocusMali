@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">FocusBuddy</string>
+
     <string name="mode_focus"> Enfoque </string>
     <string name="mode_break"> Descanso </string>
     <string name="mode_long_break"> Descanso largo </string>
@@ -29,4 +31,20 @@
 
     <string name="session_count"> %1$d sesiones </string>
     <string name="title_preferences"> Preferencias </string>
+    <string name="timer_default_time">25:00</string>
+    <string name="pref_header_general">General</string>
+    <string name="pref_title_lang">Idioma</string>
+    <string name="pref_title_theme">Tema de la aplicación</string>
+    <string name="pref_theme_light">Claro</string>
+    <string name="pref_theme_dark">Oscuro</string>
+
+    <string name="type_focus">Enfoque</string>
+    <string name="type_break">Descanso</string>
+    <string name="status_completed">Completado</string>
+    <string name="status_skipped">Saltado</string>
+
+
+    <string name="pref_summary_theme">Elige entre modo claro u oscuro</string>
+    <string name="pref_summary_lang">Selecciona el lenguaje de la interfaz</string>
+
 </resources>
