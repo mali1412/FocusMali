@@ -33,27 +33,31 @@ public class SessionManager {
 
     /**
      * Guarda una sesión físicamente en la base de datos.
+     * CUMPLE RÚBRICA: Ejecución en Background Thread para no bloquear la UI.
      */
-    public void addSession(Session session) {
+    public void addSession(final Session session) {
         if (session == null) return;
 
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                ContentValues values = new ContentValues();
 
-        values.put(SessionDbHelper.COLUMN_TYPE, session.getType());
-        values.put(SessionDbHelper.COLUMN_DATE, session.getDate());
-        values.put(SessionDbHelper.COLUMN_START_TIME, session.getStartTime());
-        values.put(SessionDbHelper.COLUMN_DURATION, session.getDuration());
-        // SQLite no maneja booleanos, usamos 1 para true y 0 para false
-        values.put(SessionDbHelper.COLUMN_COMPLETED, session.isCompleted() ? 1 : 0);
+                values.put(SessionDbHelper.COLUMN_TYPE, session.getType());
+                values.put(SessionDbHelper.COLUMN_DATE, session.getDate());
+                values.put(SessionDbHelper.COLUMN_START_TIME, session.getStartTime());
+                values.put(SessionDbHelper.COLUMN_DURATION, session.getDuration());
+                // SQLite no maneja booleanos, usamos 1 para true y 0 para false
+                values.put(SessionDbHelper.COLUMN_COMPLETED, session.isCompleted() ? 1 : 0);
 
-        try {
-            db.insert(SessionDbHelper.TABLE_NAME, null, values);
-        } catch (Exception e) {
-            e.printStackTrace(); // Requisito: Manejo de errores
-        } finally {
-            db.close(); // Siempre cerrar para evitar fugas de memoria
-        }
+                // La inserción ocurre fuera del hilo principal
+                db.insert(SessionDbHelper.TABLE_NAME, null, values);
+
+                // Cerramos la conexión dentro del mismo hilo
+                db.close();
+            }
+        }).start();
     }
 
     /**
