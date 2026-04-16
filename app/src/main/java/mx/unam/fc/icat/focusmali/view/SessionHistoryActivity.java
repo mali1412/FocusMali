@@ -127,8 +127,11 @@ public class SessionHistoryActivity extends AppCompatActivity {
         layoutEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
         recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
 
+        int count = (sessions != null ? sessions.size() : 0);
+
         // Uso de string con formato para soporte multi-idioma.
-        String countText = getString(R.string.session_count, (sessions != null ? sessions.size() : 0));
+        //String countText = getString(R.string.session_count, (sessions != null ? sessions.size() : 0));
+        String countText = getResources().getQuantityString(R.plurals.session_count_plural, count, count);
         tvResultCount.setText(countText);
     }
 

@@ -30,6 +30,11 @@
     <string name="history_empty_desc">Start your first session!</string>
 
     <string name="session_count">%1$d sessions</string>
+    <plurals name="session_count_plural">
+        <item quantity="one">%d session found</item>
+        <item quantity="other">%d sessions found</item>
+    </plurals>
+
     <string name="title_preferences">Preferences</string>
 
     <string name="theme_preference_key" translatable="false">theme_preference_key</string>
