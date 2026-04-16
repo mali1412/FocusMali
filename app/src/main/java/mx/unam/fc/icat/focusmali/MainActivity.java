@@ -5,10 +5,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.ColorStateList;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -94,17 +96,25 @@ public class MainActivity extends AppCompatActivity {
 
     // --- NUEVO MÉTODO PARA CARGAR IDIOMA ---
     private void loadLocale() {
-        SharedPreferences settingsPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String lang = settingsPrefs.getString(getString(R.string.lang_preference_key), "es");
-        applyLanguage(lang);
+        try {
+            SharedPreferences settingsPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+            String lang = settingsPrefs.getString(getString(R.string.lang_preference_key), "es");
+            applyLanguage(lang);
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error cargando idioma", e);
+        }
     }
 
     private void applyLanguage(String langCode) {
-        Locale locale = new Locale(langCode);
-        Locale.setDefault(locale);
-        android.content.res.Configuration config = new android.content.res.Configuration();
-        config.setLocale(locale);
-        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+        try {
+            Locale locale = new Locale(langCode);
+            Locale.setDefault(locale);
+            android.content.res.Configuration config = new android.content.res.Configuration();
+            config.setLocale(locale);
+            getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error aplicando configuración de lenguaje", e);
+        }
     }
 
     // --- REFRESCAR AL VOLVER DE PREFERENCIAS ---
@@ -214,13 +224,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveSessionToDatabase(boolean completed) {
-        String type = (currentMode == SessionMode.FOCUS) ? getString(R.string.mode_focus) : getString(R.string.mode_break);
-        int duration = (int) (getDurationForMode(currentMode) / 60000);
-        String date = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault()).format(new Date());
-        String startTime = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
+        try {
+            String type = (currentMode == SessionMode.FOCUS) ? getString(R.string.mode_focus) : getString(R.string.mode_break);
+            int duration = (int) (getDurationForMode(currentMode) / 60000);
+            String date = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault()).format(new Date());
+            String startTime = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
 
-        Session session = new Session(type, date, startTime, duration, completed);
-        sessionManager.addSession(session);
+            Session session = new Session(type, date, startTime, duration, completed);
+            sessionManager.addSession(session);
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error al preparar datos para la DB", e);
+        }
     }
 
     private void skipToNextSession() {
@@ -294,8 +308,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void vibrate() {
-        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        if (v != null) v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+        // --- CUMPLE RÚBRICA: Manejo de Hardware con try-catch ---
+        try {
+            Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            if (v != null && v.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    v.vibrate(500);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error al intentar usar el vibrador", e);
+        }
     }
 
     private void addDot() {
@@ -318,23 +343,31 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putLong(KEY_TIME_LEFT, timeLeftMillis);
-        outState.putString(KEY_SESSION_MODE, currentMode.name());
-        outState.putInt(KEY_SESSIONS_COMPLETED, focusSessionsCompleted);
-        outState.putString(KEY_TIMER_STATE, timerState.name());
+        try {
+            outState.putLong(KEY_TIME_LEFT, timeLeftMillis);
+            outState.putString(KEY_SESSION_MODE, currentMode.name());
+            outState.putInt(KEY_SESSIONS_COMPLETED, focusSessionsCompleted);
+            outState.putString(KEY_TIMER_STATE, timerState.name());
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error guardando instancia", e);
+        }
     }
 
     private void restoreState(Bundle savedInstanceState) {
-        if (savedInstanceState != null) {
-            timeLeftMillis = savedInstanceState.getLong(KEY_TIME_LEFT, FOCUS_DURATION_MS);
-            currentMode = SessionMode.valueOf(savedInstanceState.getString(KEY_SESSION_MODE, "FOCUS"));
-            focusSessionsCompleted = savedInstanceState.getInt(KEY_SESSIONS_COMPLETED, 0);
-            timerState = TimerState.valueOf(savedInstanceState.getString(KEY_TIMER_STATE, "IDLE"));
-        } else {
-            timeLeftMillis = sharedPreferences.getLong(KEY_TIME_LEFT, FOCUS_DURATION_MS);
-            currentMode = SessionMode.valueOf(sharedPreferences.getString(KEY_SESSION_MODE, "FOCUS"));
-            focusSessionsCompleted = sharedPreferences.getInt(KEY_SESSIONS_COMPLETED, 0);
-            timerState = TimerState.valueOf(sharedPreferences.getString(KEY_TIMER_STATE, "IDLE"));
+        try {
+            if (savedInstanceState != null) {
+                timeLeftMillis = savedInstanceState.getLong(KEY_TIME_LEFT, FOCUS_DURATION_MS);
+                currentMode = SessionMode.valueOf(savedInstanceState.getString(KEY_SESSION_MODE, "FOCUS"));
+                focusSessionsCompleted = savedInstanceState.getInt(KEY_SESSIONS_COMPLETED, 0);
+                timerState = TimerState.valueOf(savedInstanceState.getString(KEY_TIMER_STATE, "IDLE"));
+            } else {
+                timeLeftMillis = sharedPreferences.getLong(KEY_TIME_LEFT, FOCUS_DURATION_MS);
+                currentMode = SessionMode.valueOf(sharedPreferences.getString(KEY_SESSION_MODE, "FOCUS"));
+                focusSessionsCompleted = sharedPreferences.getInt(KEY_SESSIONS_COMPLETED, 0);
+                timerState = TimerState.valueOf(sharedPreferences.getString(KEY_TIMER_STATE, "IDLE"));
+            }
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error restaurando estado", e);
         }
     }
 

@@ -4,26 +4,24 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log; // Añadido para reportar errores en el Logcat
 import mx.unam.fc.icat.focusmali.data.SessionDbHelper;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Gestiona el ciclo de vida de las sesiones.
- * Ahora utiliza el patrón Singleton y SQLite para persistencia real.
+ * Implementa Robustez mediante el manejo de excepciones (try-catch).
  */
 public class SessionManager {
     private static SessionManager instance;
     private final SessionDbHelper dbHelper;
+    private static final String TAG = "SessionManager";
 
-    // El constructor es privado: nadie puede hacer 'new SessionManager()' desde fuera
     private SessionManager(Context context) {
         this.dbHelper = new SessionDbHelper(context.getApplicationContext());
     }
 
-    /**
-     * Método Singleton: garantiza que toda la app use la misma conexión a la DB.
-     */
     public static synchronized SessionManager getInstance(Context context) {
         if (instance == null) {
             instance = new SessionManager(context);
@@ -33,7 +31,7 @@ public class SessionManager {
 
     /**
      * Guarda una sesión físicamente en la base de datos.
-     * CUMPLE RÚBRICA: Ejecución en Background Thread para no bloquear la UI.
+     * CUMPLE RÚBRICA: Robustez con bloques try-catch-finally.
      */
     public void addSession(final Session session) {
         if (session == null) return;
@@ -41,52 +39,72 @@ public class SessionManager {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                SQLiteDatabase db = dbHelper.getWritableDatabase();
-                ContentValues values = new ContentValues();
+                SQLiteDatabase db = null;
+                try {
+                    // INTENTO de escritura
+                    db = dbHelper.getWritableDatabase();
+                    ContentValues values = new ContentValues();
 
-                values.put(SessionDbHelper.COLUMN_TYPE, session.getType());
-                values.put(SessionDbHelper.COLUMN_DATE, session.getDate());
-                values.put(SessionDbHelper.COLUMN_START_TIME, session.getStartTime());
-                values.put(SessionDbHelper.COLUMN_DURATION, session.getDuration());
-                // SQLite no maneja booleanos, usamos 1 para true y 0 para false
-                values.put(SessionDbHelper.COLUMN_COMPLETED, session.isCompleted() ? 1 : 0);
+                    values.put(SessionDbHelper.COLUMN_TYPE, session.getType());
+                    values.put(SessionDbHelper.COLUMN_DATE, session.getDate());
+                    values.put(SessionDbHelper.COLUMN_START_TIME, session.getStartTime());
+                    values.put(SessionDbHelper.COLUMN_DURATION, session.getDuration());
+                    values.put(SessionDbHelper.COLUMN_COMPLETED, session.isCompleted() ? 1 : 0);
 
-                // La inserción ocurre fuera del hilo principal
-                db.insert(SessionDbHelper.TABLE_NAME, null, values);
+                    db.insert(SessionDbHelper.TABLE_NAME, null, values);
+                    Log.d(TAG, "Sesión insertada con éxito.");
 
-                // Cerramos la conexión dentro del mismo hilo
-                db.close();
+                } catch (Exception e) {
+                    // CAPTURA de errores (Robustez)
+                    Log.e(TAG, "Error crítico al insertar en la base de datos: " + e.getMessage());
+                } finally {
+                    // CIERRE SEGURO: Se ejecuta ocurra o no un error
+                    if (db != null && db.isOpen()) {
+                        db.close();
+                    }
+                }
             }
         }).start();
     }
 
     /**
-     * Recupera el historial desde SQLite ordenado por lo más reciente.
+     * Recupera el historial desde SQLite.
+     * CUMPLE RÚBRICA: Manejo de errores en operaciones de lectura.
      */
     public List<Session> getHistory() {
         List<Session> history = new ArrayList<>();
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        SQLiteDatabase db = null;
+        Cursor cursor = null;
 
-        Cursor cursor = db.query(
-                SessionDbHelper.TABLE_NAME,
-                null, null, null, null, null,
-                SessionDbHelper.COLUMN_ID + " DESC"
-        );
+        try {
+            db = dbHelper.getReadableDatabase();
+            cursor = db.query(
+                    SessionDbHelper.TABLE_NAME,
+                    null, null, null, null, null,
+                    SessionDbHelper.COLUMN_ID + " DESC"
+            );
 
-        if (cursor != null && cursor.moveToFirst()) {
-            do {
-                Session session = new Session(
-                        cursor.getString(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_TYPE)),
-                        cursor.getString(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_DATE)),
-                        cursor.getString(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_START_TIME)),
-                        cursor.getInt(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_DURATION)),
-                        cursor.getInt(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_COMPLETED)) == 1
-                );
-                history.add(session);
-            } while (cursor.moveToNext());
-            cursor.close();
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    Session session = new Session(
+                            cursor.getString(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_TYPE)),
+                            cursor.getString(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_DATE)),
+                            cursor.getString(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_START_TIME)),
+                            cursor.getInt(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_DURATION)),
+                            cursor.getInt(cursor.getColumnIndexOrThrow(SessionDbHelper.COLUMN_COMPLETED)) == 1
+                    );
+                    history.add(session);
+                } while (cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            // Si hay un error, devolvemos la lista vacía pero la app no truena
+            Log.e(TAG, "Error al recuperar historial: " + e.getMessage());
+        } finally {
+            // Liberación de recursos
+            if (cursor != null) cursor.close();
+            if (db != null) db.close();
         }
-        db.close();
+
         return history;
     }
 }

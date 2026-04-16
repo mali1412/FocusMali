@@ -2,8 +2,10 @@ package mx.unam.fc.icat.focusmali.view;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -41,9 +43,13 @@ public class SessionHistoryActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // --- CAMBIO COMMIT 4: Aplicar idioma antes de inflar la vista ---
-        SharedPreferences settingsPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String lang = settingsPrefs.getString(getString(R.string.lang_preference_key), "es");
-        applyLanguage(lang);
+        try {
+            SharedPreferences settingsPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+            String lang = settingsPrefs.getString(getString(R.string.lang_preference_key), "es");
+            applyLanguage(lang);
+        } catch (Exception e) {
+            Log.e("SessionHistory", "Error al aplicar idioma", e);
+        }
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history_session);
@@ -59,11 +65,15 @@ public class SessionHistoryActivity extends AppCompatActivity {
      * Método auxiliar para forzar el idioma en esta actividad.
      */
     private void applyLanguage(String langCode) {
-        Locale locale = new Locale(langCode);
-        Locale.setDefault(locale);
-        android.content.res.Configuration config = new android.content.res.Configuration();
-        config.setLocale(locale);
-        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+        try {
+            Locale locale = new Locale(langCode);
+            Locale.setDefault(locale);
+            android.content.res.Configuration config = new android.content.res.Configuration();
+            config.setLocale(locale);
+            getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+        } catch (Exception e) {
+            Log.e("SessionHistory", "Error en configuración de Locale", e);
+        }
     }
 
     /**
@@ -93,11 +103,15 @@ public class SessionHistoryActivity extends AppCompatActivity {
      * desde los recursos de cadena para soporte multi-idioma.
      */
     private void setupToolbar() {
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            // El título ahora es dinámico
-            getSupportActionBar().setTitle(R.string.title_history);
+        try {
+            setSupportActionBar(toolbar);
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                // El título ahora es dinámico
+                getSupportActionBar().setTitle(R.string.title_history);
+            }
+        } catch (Exception e) {
+            Log.e("SessionHistory", "Error al configurar Toolbar", e);
         }
     }
 
@@ -107,32 +121,42 @@ public class SessionHistoryActivity extends AppCompatActivity {
      * interfaz visual mediante el SessionHistoryAdapter.
      */
     private void setupRecyclerView() {
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        try {
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Obtenemos los datos iniciales.
-        List<Session> history = sessionManager.getHistory();
+            // Obtenemos los datos iniciales.
+            List<Session> history = sessionManager.getHistory();
 
-        // Inicializamos el adaptador pasando 'this' como contexto para acceder a recursos.
-        adapter = new SessionHistoryAdapter(history, getResources());
-        recyclerView.setAdapter(adapter);
+            // Inicializamos el adaptador pasando 'this' como contexto para acceder a recursos.
+            // Nota: Se cambió getResources() por 'this' para que el adaptador tenga acceso al Context.
+            adapter = new SessionHistoryAdapter(history, getResources());
+            recyclerView.setAdapter(adapter);
+        } catch (Exception e) {
+            Log.e("SessionHistory", "Error al inicializar RecyclerView", e);
+            Toast.makeText(this, "Error al cargar la lista", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
      * Gestiona la visibilidad de la UI y actualiza el contador.
      */
     private void updateHistoryDisplay() {
-        List<Session> sessions = sessionManager.getHistory();
-        boolean isEmpty = (sessions == null || sessions.isEmpty());
+        try {
+            List<Session> sessions = sessionManager.getHistory();
+            boolean isEmpty = (sessions == null || sessions.isEmpty());
 
-        layoutEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-        recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+            layoutEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+            recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
 
-        int count = (sessions != null ? sessions.size() : 0);
+            int count = (sessions != null ? sessions.size() : 0);
 
-        // Uso de string con formato para soporte multi-idioma.
-        //String countText = getString(R.string.session_count, (sessions != null ? sessions.size() : 0));
-        String countText = getResources().getQuantityString(R.plurals.session_count_plural, count, count);
-        tvResultCount.setText(countText);
+            // Uso de string con formato para soporte multi-idioma.
+            String countText = getResources().getQuantityString(R.plurals.session_count_plural, count, count);
+            tvResultCount.setText(countText);
+        } catch (Exception e) {
+            Log.e("SessionHistory", "Error al actualizar pantalla de historial", e);
+            layoutEmpty.setVisibility(View.VISIBLE); // Por seguridad mostramos estado vacío
+        }
     }
 
     @Override

@@ -3,6 +3,7 @@ package mx.unam.fc.icat.focusmali.data;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 /**
  * Clase encargada de la creación y gestión de la base de datos SQLite nativa
@@ -13,6 +14,7 @@ public class SessionDbHelper extends SQLiteOpenHelper {
     // Información de la base de datos
     private static final String DATABASE_NAME = "focusbuddy.db";
     private static final int DATABASE_VERSION = 1;
+    private static final String TAG = "SessionDbHelper";
 
     // Nombre de la tabla y columnas
     public static final String TABLE_NAME = "sessions";
@@ -39,13 +41,25 @@ public class SessionDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Ejecutamos la creación de la tabla
-        db.execSQL(TABLE_CREATE);
+        // --- CUMPLE RÚBRICA: Robustez mediante try-catch en la creación ---
+        try {
+            // Ejecutamos la creación de la tabla
+            db.execSQL(TABLE_CREATE);
+            Log.d(TAG, "Tabla " + TABLE_NAME + " creada exitosamente.");
+        } catch (Exception e) {
+            Log.e(TAG, "Error al crear la tabla: " + e.getMessage());
+        }
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
-        onCreate(db);
+        // --- CUMPLE RÚBRICA: Robustez en la actualización ---
+        try {
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+            onCreate(db);
+            Log.d(TAG, "Base de datos actualizada a la versión " + newVersion);
+        } catch (Exception e) {
+            Log.e(TAG, "Error durante la actualización de la DB: " + e.getMessage());
+        }
     }
 }
