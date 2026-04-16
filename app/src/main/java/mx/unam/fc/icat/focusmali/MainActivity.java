@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Inicialización de componentes y gestores
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        sessionManager = new SessionManager();
+        sessionManager = SessionManager.getInstance(this);
 
 
         bindViews();

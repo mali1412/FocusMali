@@ -58,7 +58,7 @@ public class SessionHistoryActivity extends AppCompatActivity {
 
         // TODO: Vincular Chips mediante findViewById y asignar IDs correspondientes.
 
-        sessionManager = new SessionManager();
+        sessionManager = SessionManager.getInstance(this);
 
         // Puedes descomentar estas líneas para probar el diseño:
         /*
