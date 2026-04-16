@@ -33,3 +33,45 @@ La aplicación utiliza el patrón **Modelo-Vista-Controlador** para desacoplar l
 * **Configuración:** `SharedPreferences` para persistir preferencias de usuario (Tema e Idioma).
 
 Esta estructura garantiza que **FocusLab** sea una aplicación profesional, escalable y capaz de mantener la integridad de los datos de productividad del usuario incluso tras el cierre de la aplicación.
+
+
+# FocusBuddy - Pomodoro App 
+
+**Estudiante:** Malinalli Escobedo Irineo  
+**No. de Cuenta:** 424121101  
+**Materia:** Programación de Dispositivos Móviles  
+**Facultad:** Facultad de Ciencias, UNAM
+
+---
+
+
+## Descripción  de tareas realizadas
+
+###  Arquitectura y Diseño
+* **Patrón MVC:** Separación lógica entre los modelos de datos, la interfaz de usuario y los controladores.
+* **Interfaz Adaptativa:** Uso de Material Design, `ConstraintLayout`, `RecyclerView` y `Chips` para una navegación intuitiva.
+* **Orientación:** Configurada  en modo **Portrait** (Vertical).
+
+### Persistencia de Datos
+* **SQLite:** Implementación de una base de datos local para almacenar el historial de sesiones (tipo, fecha, duración y estado).
+* **SharedPreferences:** Persistencia del estado actual del cronómetro y preferencias del usuario. 
+
+### Ajustes
+* **Soporte Multi-idioma:** Traducción de  **Inglés** y **Español** mediante archivos de recursos `strings.xml`.
+* **Cero Hardcoding:** Todos los textos de la interfaz, incluyendo plurales y estados del adaptador, se gestionan a través del sistema de recursos de Android.
+
+### Robustez 
+* **Manejo de Excepciones:** Uso de bloques `try-catch`.
+
+---
+
+## Retos 
+Considero que lo que más se me complicó de esta práctica fue que, al cerrar la aplicación, el cronómetro se mantuviera justo donde el usuario lo dejó antes de salir, y lograr sincronizar todo correctamente. Para esto, utilicé principalmente los métodos onPause(), onCreate() y onResume().
+
+## Propuestas para Versión 2.0
+1. **Notificaciones:** Implementaria notificaciones en la barra de estado para avisar el fin de una sesión pero en segundo plano.
+2. **Sincronización en la Nube:** Permitir que el historial se guarde en la nube para asi no perder los datos al cambiar de dispositivo
+3. **Estadísticas:** Añadiría gráficas de barras que reflejen las sesiones de estudio que se han tenido en la semana o meses
+
+
+---
