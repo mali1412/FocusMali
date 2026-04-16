@@ -33,6 +33,7 @@ public class SessionHistoryAdapter extends RecyclerView.Adapter<SessionHistoryAd
         private TextView tvSessionType, tvSessionDate, tvSessionTime, tvSessionDuration;
         private Chip chipStatus;
 
+
         /**
          * Constructor que recibe la vista inflada del ítem.
          * @param itemView La vista raíz del layout del elemento de la lista.
@@ -82,31 +83,36 @@ public class SessionHistoryAdapter extends RecyclerView.Adapter<SessionHistoryAd
      * @param holder El contenedor de las vistas (ViewHolder).
      * @param position La posición del elemento dentro del DATASET.
      */
+
     @Override
     public void onBindViewHolder(@NonNull SessionViewHolder holder, int position) {
-        // Recuperamos el objeto de datos según la posición actual.
+        android.content.Context context = holder.itemView.getContext();
         Session session = DATASET.get(position);
 
-        // Asignamos los valores del objeto a los TextViews del ViewHolder.
-        holder.tvSessionType.setText(session.getType());
+        String typeInDb = session.getType();
+        if (typeInDb.equalsIgnoreCase("Enfoque") || typeInDb.equalsIgnoreCase("Focus")) {
+            holder.tvSessionType.setText(context.getString(R.string.type_focus));
+        } else {
+            holder.tvSessionType.setText(context.getString(R.string.type_break));
+        }
+
         holder.tvSessionDate.setText(session.getDate());
         holder.tvSessionTime.setText(session.getStartTime());
-        // Concatenamos la unidad de tiempo (min) al valor numérico.
         holder.tvSessionDuration.setText(session.getDuration() + " min");
 
-        // Lógica de retroalimentación visual basada en el estado de la sesión.
         if (session.isCompleted()) {
-            // Caso: Sesión terminada exitosamente.
-            holder.chipStatus.setText("✓ Completada");
+            holder.chipStatus.setText("✓ " + context.getString(R.string.status_completed));
+
             holder.chipStatus.setChipBackgroundColorResource(R.color.white);
             holder.chipStatus.setTextColor(RESOURCES.getColor(R.color.color_primary, null));
         } else {
-            // Caso: Sesión interrumpida por el usuario o sistema.
-            holder.chipStatus.setText("✕ Interrumpida");
+            holder.chipStatus.setText("✕ " + context.getString(R.string.status_skipped));
+
             holder.chipStatus.setChipBackgroundColorResource(R.color.color_secondary);
             holder.chipStatus.setTextColor(RESOURCES.getColor(R.color.white, null));
         }
     }
+
 
 
     /**
